@@ -1,0 +1,257 @@
+endbr64 
+cmp    %edi,0x2dfd(%rip)        # 0x4010 <inteiro_global> (16400 em decimal)
+sete   %al
+movzbl %al,%eax
+retq 
+
+*edi é um argumentos inteiro passado no registrador e na chamada da função.
+*o cmp compara esse valor com o que está no endereço relativo passado- que é 0x4010.
+*Assim, para saber o que está no endereço uso o x/1dh 0x4010 - que no caso é -5583.
+*Se eu passo no edi o que é igual ao -5583 ele me retorna 0 de true! 
+*movzbl - operação de casting. 0 para o retorno e retorna.
+ 
+compara o que está em edi (4 bytes) com 11773 somados ao rip
+sets its argument to 1 if the zero flag is set or to 0 otherwise.
+
+-----------------------------------------------------------------------------------
+endbr64 
+sub    $0x8,%rsp
+lea    0xdc1(%rip),%rsi        # 0x2004
+callq  0x121a <string_diferente>
+test   %eax,%eax
+je     0x1256 <level2+34>
+mov    $0x0,%eax
+add    $0x8,%rsp
+retq   
+mov    $0x1,%eax
+jmp    0x1251 <level2+29>
+
+
+*subtrai 8 do rsp - mexendo na stack
+*carrega o que está em rip para rsi (28503)
+*chama a string diferente WonderlandsMadness para jogar na funcao string_diferente x/s 
+*testa eax com eax (para ver se o retorno que eu escrevo é igual)
+*jump equal 440
+*move 0 para o eax
+*adiciona 8 no rsp 
+*retorna eax
+
+BAsicamente: verifica se a string que tô passando é igual a WonderlandsMadness. Se for, ele compara com o jump e manda pro endereco 
+do mov 1 para retornar verdadeiro e depois só mexe na stack. Se nao, ele retorna 0 e mexe na stack. 
+
+
+sub    $0x8,%rsp
+callq  0x10d0 <strcmp@plt> // função da propria lib que compara se as strings são iguais. 
+test   %eax,%eax
+setne  %al
+movzbl %al,%eax
+add    $0x8,%rsp
+retq   
+
+----------------------------------------------------------------------------------
+
+
+endbr64 
+lea    (%rdi,%rdi,2),%eax
+cmp    $0x1ba,%eax
+jle    0x127b <level3+30>
+cmp    $0xfffffe46,%eax
+jl     0x1281 <level3+36>
+test   $0x1,%al
+jne    0x1287 <level3+42>
+test   %eax,%eax
+jne    0x128d <level3+48>
+retq   
+mov    $0x1,%eax
+retq   
+mov    $0x0,%eax
+retq   
+mov    $0x0,%eax
+retq   
+mov    $0x1,%eax
+retq   
+
+
+retval = (2*a + a)
+if ((442 - retval) <= 0){
+    return 1;
+} if ((4294966854 - retval) < 0){
+    return 0;
+} if ((1 & ((4294966854 - retval) < 0)) != 0){
+    return 0;
+} if ((retval & retval) != 0){
+    return 1;
+}
+----------------------------------------------------------
+level4 
+
+  0x0000000000001293 <+0>:	endbr64 
+   0x0000000000001297 <+4>:	mov    %rdi,%rax
+   0x000000000000129a <+7>:	movslq %esi,%rsi
+   0x000000000000129d <+10>:	mov    $0x0,%edx
+   0x00000000000012a2 <+15>:	div    %rsi
+   0x00000000000012a5 <+18>:	cmp    $0x9,%rdx
+   0x00000000000012a9 <+22>:	je     0x12b1 <level4+30>
+   0x00000000000012ab <+24>:	mov    $0x0,%eax
+   0x00000000000012b0 <+29>:	retq   
+   0x00000000000012b1 <+30>:	mov    $0x1,%eax
+   0x00000000000012b6 <+35>:	retq  
+
+
+%rdi = a
+%rsi = b
+%rdx = c
+%rcx
+%r8
+%r9
+
+int level4(long a, int b, int c){
+    int retval;
+    retval = a;
+    (long) b;
+    c = 0;
+
+    c = (b % retval);
+    retval = (b/retval);
+
+    if (9 == c){
+        return 1;
+    } return 0;
+
+}
+
+
+----------------------------------------------------------
+
+rip = next instruction
+rsp = pegar o que está armazenando na pilha - stack 
+
+
+%rdi = a
+%rsi = b
+%rdx = c
+%r8 = d
+
+level5 
+
+ 0x00000000000012b7 <+0>:	endbr64 
+   0x00000000000012bb <+4>:	lea    (%rdi,%rdi,4),%rax
+   0x00000000000012bf <+8>:	lea    0x51(%rax,%rsi,4),%rax
+   0x00000000000012c4 <+13>:	cmp    $0x138aee6,%rax
+   0x00000000000012ca <+19>:	sete   %r8b
+   0x00000000000012ce <+23>:	cmp    %rsi,%rdi
+   0x00000000000012d1 <+26>:	setne  %cl
+   0x00000000000012d4 <+29>:	test   %cl,%r8b
+   0x00000000000012d7 <+32>:	je     0x12f5 <level5+62>
+   0x00000000000012d9 <+34>:	movl   $0x0,(%rdx)
+   0x00000000000012df <+40>:	cmp    $0xda43,%rax
+   0x00000000000012e5 <+46>:	setg   %al
+   0x00000000000012e8 <+49>:	cmp    $0xfffffffffffffff2,%rdi
+   0x00000000000012ec <+53>:	setl   %dl
+   0x00000000000012ef <+56>:	and    %edx,%eax
+   0x00000000000012f1 <+58>:	movzbl %al,%eax
+   0x00000000000012f4 <+61>:	retq   
+   0x00000000000012f5 <+62>:	movl   $0x1,(%rdx)
+   0x00000000000012fb <+68>:	jmp    0x12df <level5+40>
+
+
+int level5(long a, long b, long *c){
+    long retval = 5*a;
+    retval += 81 + 4*b;
+
+    if (((20492006 == retval) && (b != a)) == 1){
+        *c = 0;
+    } else{
+        *c = 1;
+    }
+
+    char al =  (retval > 55875); 
+    char dl = (a < -14);
+
+    return (al && dl);
+}
+
+-----------------------------------------------
+
+%rdi - a
+%rsi - b
+%rdx - c
+%rcx - d
+%r8
+%r9
+
+rsp - var1 
+int level6(long var1, long b, long c, long d){
+    var1-=24;
+    #
+    d = 4+var1;
+    c = 8+var1;
+    b = 12+var1;
+    long a = 3324 + 25637; #o que está no rip
+
+    int retval = 0;
+
+    c = 12+var1;
+    d = 8+var1;
+    retval =  c+d;
+
+    b = 4+var1;
+
+    # 44 sem considerar o rsp 
+
+    b+=retval;
+    
+    # colocar -40 no b;
+
+    if (c <= 11){
+        retval = 0;
+    }
+    if (d <= 11){
+        retval = 0;
+    }
+
+    if (b <= 11){
+        retval = 0;
+    } 
+
+    if (retval <= 39){
+        retval = 1;
+    }
+
+    var1+=24;
+    return retval;
+}
+
+
+-----------------
+sub    $0x18,%rsp
+lea    0x4(%rsp),%rcx
+lea    0x8(%rsp),%rdx
+lea    0xc(%rsp),%rsi
+lea    0xcfc(%rip),%rdi        # 0x2017
+mov    $0x0,%eax
+callq  0x10f0 <__isoc99_scanf@plt>
+mov    0xc(%rsp),%edx
+mov    0x8(%rsp),%ecx
+lea    (%rdx,%rcx,1),%eax
+mov    0x4(%rsp),%esi
+add    %esi,%eax
+cmp    $0xb,%edx
+jle    0x1351 <level6+84>
+cmp    $0xb,%ecx
+jle    0x135b <level6+94>
+cmp    $0xb,%esi
+jle    0x1362 <level6+101>
+cmp    $0x27,%eax
+jle    0x1369 <level6+108>
+mov    $0x0,%eax
+jmp    0x1356 <level6+89>
+mov    $0x0,%eax
+add    $0x18,%rsp
+retq   
+mov    $0x0,%eax
+jmp    0x1356 <level6+89>
+mov    $0x0,%eax
+jmp    0x1356 <level6+89>
+mov    $0x1,%eax
+jmp    0x1356 <level6+89>

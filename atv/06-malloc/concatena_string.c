@@ -4,9 +4,17 @@
 
 /* Recebe duas strings e concatena em uma terceira */
 char *mystrcat(char *str1, char *str2) {
-    /* Faça sua solução aqui!*/
-    /* Pode alterar tudo, inclusive o retorno*/
-    return NULL;
+    char *new_string = malloc((strlen(str1)*sizeof(char)) + (strlen(str2)*sizeof(char)) + 1);
+
+    for (int i = 0; i < (strlen(str1) + strlen(str2)); i++){
+        if (i < strlen(str1)){
+            new_string[i] = str1[i];
+        } else {
+            new_string[i] = str2[i - strlen(str1)];
+        }
+    }
+
+    return new_string;
 }
 
 int main(int argc, char *argv[]) {
