@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "macros_correcoes.h"
 
+
 /* Recebe duas strings e concatena em uma terceira */
 char *mystrcat(char *str1, char *str2) {
     char *new_string = malloc((strlen(str1)*sizeof(char)) + (strlen(str2)*sizeof(char)) + 1);
@@ -13,6 +14,8 @@ char *mystrcat(char *str1, char *str2) {
             new_string[i] = str2[i - strlen(str1)];
         }
     }
+
+    new_string[(strlen(str1) + strlen(str2))] = '\0';
 
     return new_string;
 }

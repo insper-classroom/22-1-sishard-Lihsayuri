@@ -10,6 +10,8 @@ char *mystrcpy(char *stroriginal) {
         new_string[i] = stroriginal[i];
     }
 
+    new_string[strlen(stroriginal)] = '\0';
+
     return new_string;
 }
 
