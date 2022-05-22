@@ -17,14 +17,38 @@ typedef struct pidPrograma
     int status;
 } pidProgram;
 
+int matar_tudo = 0;
+struct sigaction s;
+
+void sig_handler(int num) {
+    printf("Chamou Ctrl+C\n");
+
+    char answer[1];
+
+    printf("Você quer mesmo encerrar tudo?");
+    scanf("%s", answer);
+
+    if (strcmp(answer, "y") == 0 || strcmp(answer,"Y") == 0){
+        kill(0, SIGINT);
+
+        s.sa_handler = SIG_DFL;
+        sigaction(SIGINT, &s, NULL);
+        raise(SIGINT);
+    } 
+}
+
+
 int main(int argc, char *argv[])
 {
 
-    int wstatus = 0;
+    s.sa_handler = sig_handler; // aqui vai a função a ser executada
+    sigemptyset(&s.sa_mask);
+    s.sa_flags = 0;
+    sigaction(SIGINT, &s, NULL);
+
+
     char buf[100];
-
     char *str_flag = argv[1];
-
     char string_programas[10000];
     // printf("%s \n", str_flag);
 
@@ -58,7 +82,6 @@ int main(int argc, char *argv[])
         while (token != NULL)
         {
             programs_counter++;
-
             programs = realloc(programs, programs_counter * sizeof(char *));
             programs[programs_counter - 1] = malloc(sizeof(char) * 1000);
 
@@ -89,12 +112,11 @@ int main(int argc, char *argv[])
         }
 
 
-        // wait(&wstatus);
-
-        // for(int i = 0; i < programs_counter; i++) {
         while(1){
+
             int status = 0;
             pid_t childpid = wait(&status);
+
             printf("Parent knows child %d is finished. \n", (int)childpid);
             for (int j = 0; j < programs_counter; j++){
                 if (lista[j].pid == childpid){
@@ -108,29 +130,38 @@ int main(int argc, char *argv[])
                     }
                 }
             }
+
+            
+            
         }
 
     }
+
 
     if (str_flag[1] == 'p'){
-        int status = 1;
 
-        printf(" Isso aqui: %s \n", argv[2]);
-        while (status != 0){
-            pid_t filho = fork();
-            if (filho == 0){
-                printf("Meu pid: %d\n", getpid());
-                char *args[] = {argv[2], NULL};
-                execvp(argv[2], args);
-            }
-            else {
-                wait(&wstatus);        
-                printf("Status aqui %d \n", WEXITSTATUS(wstatus));
-                status = 1;
-            }
+        pid_t filho = fork();
+        if (filho == 0)
+        {
+            char *args[] = {argv[2], NULL};
+            execvp(argv[2], args);
+        }
 
+        while(1){
+
+            int status;
+            pid_t childpid = wait(&status);
+
+            printf("Parent knows child %d is finished. \n", (int)childpid);
+            if (childpid > 0){
+                pid_t filho = fork();
+                if (filho == 0){
+                    char *args[] = {argv[2], NULL};
+                    execvp(argv[2], args);
+                } 
+            }
         }
     }
-
+        
     return 0;
 }
