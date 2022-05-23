@@ -20,6 +20,18 @@ typedef struct pidPrograma
 int matar_tudo = 0;
 struct sigaction s;
 
+int conta_num_char(char string[]){
+    int count = 0;  
+      
+    //Counts each character except space  
+    for(int i = 0; i < strlen(string); i++) {  
+        if(string[i] != '\n')  
+            count++;  
+    }  
+
+    return count+1;
+}
+
 void sig_handler(int num) {
     printf("Chamou Ctrl+C\n");
 
@@ -45,16 +57,36 @@ int main(int argc, char *argv[])
     sigemptyset(&s.sa_mask);
     s.sa_flags = 0;
     sigaction(SIGINT, &s, NULL);
+    char *log;
+    char str_flag;
+    char *doc;
+
+
+
+    if (argv[1][1] == 'l'){
+        log = argv[2];
+        str_flag = argv[3][1];
+        doc = argv[4];
+    } else {
+        str_flag = argv[1][1];
+        doc = argv[2];
+        if (argc > 3){
+            log = argv[4];
+        }
+    }
+
+    printf("%c\n", str_flag);
+    printf("%s\n", doc);
 
 
     char buf[100];
-    char *str_flag = argv[1];
     char string_programas[10000];
     // printf("%s \n", str_flag);
+    int fd2 = open(log, O_WRONLY | O_CREAT, 0755);
 
-    if (str_flag[1] == 'f')
+    if (str_flag == 'f')
     {
-        int fd1 = open(argv[2], O_RDONLY);
+        int fd1 = open(doc, O_RDONLY);
         int tamanho = 1;
 
         while (tamanho > 0)
@@ -104,7 +136,10 @@ int main(int argc, char *argv[])
                 execvp(programs[i], args);
             }
             else{
-                printf("Filho %s pid: %d \n", programs[i], filho);
+                char log1[100];
+                sprintf(log1, "starting %s (pid = %d) \n", programs[i], filho);
+                write(fd2, log1, conta_num_char(log1));
+
                 lista[i].pid = filho;
                 lista[i].program = programs[i];
             }
@@ -117,11 +152,19 @@ int main(int argc, char *argv[])
             int status = 0;
             pid_t childpid = wait(&status);
 
-            printf("Parent knows child %d is finished. \n", (int)childpid);
             for (int j = 0; j < programs_counter; j++){
                 if (lista[j].pid == childpid){
+                    char log2[300];
+                    sprintf(log2, "program %s (%d) finished (EXITED=%d, EXITSTATUS=%d, SIGNALED=%d, SIGNAL=%d, SIGNALSTR=%s) \n", lista[j].program, 
+                    (int)childpid, (int)WIFEXITED(status), (int)WEXITSTATUS(status), (int)WIFSIGNALED(status), WTERMSIG(status), strsignal(WTERMSIG(status)));
+                    write(fd2, log2, conta_num_char(log2));
+
+
                     pid_t filho = fork();
                     if (filho == 0){
+                        char log3[300];
+                        sprintf(log3, "restarting %s (oldpid=%d, newpid=%d)\n", lista[j].program, childpid, getpid());
+                        write(fd2, log3, conta_num_char(log3));
                         char *args[] = {lista[j].program, NULL};
                         execvp(lista[j].program, args);
                     } else {
@@ -138,13 +181,16 @@ int main(int argc, char *argv[])
     }
 
 
-    if (str_flag[1] == 'p'){
+    if (str_flag == 'p'){
 
         pid_t filho = fork();
         if (filho == 0)
         {
-            char *args[] = {argv[2], NULL};
-            execvp(argv[2], args);
+            char log1[100];
+            sprintf(log1, "starting %s (pid = %d) \n", doc, getpid());
+            write(fd2, log1, conta_num_char(log1));
+            char *args[] = {doc, NULL};
+            execvp(doc, args);
         }
 
         while(1){
@@ -153,11 +199,19 @@ int main(int argc, char *argv[])
             pid_t childpid = wait(&status);
 
             printf("Parent knows child %d is finished. \n", (int)childpid);
+            char log2[300];
+            sprintf(log2, "program %s (%d) finished (EXITED=%d, EXITSTATUS=%d, SIGNALED=%d, SIGNAL=%d, SIGNALSTR=%s) \n", doc, 
+            (int)childpid, (int)WIFEXITED(status), (int)WEXITSTATUS(status), (int)WIFSIGNALED(status), WTERMSIG(status), strsignal(WTERMSIG(status)));
+            write(fd2, log2, conta_num_char(log2));
+
             if (childpid > 0){
                 pid_t filho = fork();
                 if (filho == 0){
-                    char *args[] = {argv[2], NULL};
-                    execvp(argv[2], args);
+                    char log3[300];
+                    sprintf(log3, "restarting %s (oldpid=%d, newpid=%d)\n", doc, childpid, getpid());
+                    write(fd2, log3, conta_num_char(log3));
+                    char *args[] = {doc, NULL};
+                    execvp(doc, args);
                 } 
             }
         }
