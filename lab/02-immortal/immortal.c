@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 
     s.sa_handler = sig_handler; // aqui vai a função a ser executada
     sigemptyset(&s.sa_mask);
-    s.sa_flags = 0;
+    s.sa_flags = SA_RESTART;
     sigaction(SIGINT, &s, NULL);
     char *log;
     char str_flag;
@@ -139,6 +139,9 @@ int main(int argc, char *argv[])
                 char log1[100];
                 sprintf(log1, "starting %s (pid = %d) \n", programs[i], filho);
                 write(fd2, log1, conta_num_char(log1));
+
+
+                // printf("PIDPAI %d\n", getpid());
 
                 lista[i].pid = filho;
                 lista[i].program = programs[i];
