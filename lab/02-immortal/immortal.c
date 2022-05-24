@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
     char buf[100];
     char string_programas[10000];
     // printf("%s \n", str_flag);
-    int fd2 = open(log, O_WRONLY | O_CREAT, 0755);
+    int fd2 = open(log, O_WRONLY | O_APPEND | O_CREAT, 0755);
 
     if (str_flag == 'f')
     {
