@@ -136,7 +136,8 @@ int main(int argc, char *argv[])
                 execvp(programs[i], args);
             }
             else{
-                char log1[100];
+                char *log1;
+                log1 = malloc(sizeof(char)*10000);
                 sprintf(log1, "starting %s (pid = %d) \n", programs[i], filho);
                 write(fd2, log1, conta_num_char(log1));
 
@@ -157,7 +158,8 @@ int main(int argc, char *argv[])
 
             for (int j = 0; j < programs_counter; j++){
                 if (lista[j].pid == childpid){
-                    char log2[300];
+                    char *log2;
+                    log2 = malloc(sizeof(char)*10000);
                     sprintf(log2, "program %s (%d) finished (EXITED=%d, EXITSTATUS=%d, SIGNALED=%d, SIGNAL=%d, SIGNALSTR=%s) \n", lista[j].program, 
                     (int)childpid, (int)WIFEXITED(status), (int)WEXITSTATUS(status), (int)WIFSIGNALED(status), WTERMSIG(status), strsignal(WTERMSIG(status)));
                     write(fd2, log2, conta_num_char(log2));
@@ -165,7 +167,8 @@ int main(int argc, char *argv[])
 
                     pid_t filho = fork();
                     if (filho == 0){
-                        char log3[300];
+                        char *log3;
+                        log3 = malloc(sizeof(char)*10000);
                         sprintf(log3, "restarting %s (oldpid=%d, newpid=%d)\n", lista[j].program, childpid, getpid());
                         write(fd2, log3, conta_num_char(log3));
                         char *args[] = {lista[j].program, NULL};
@@ -189,7 +192,8 @@ int main(int argc, char *argv[])
         pid_t filho = fork();
         if (filho == 0)
         {
-            char log1[100];
+            char *log1;
+            log1 = malloc(sizeof(char)*10000);
             sprintf(log1, "starting %s (pid = %d) \n", doc, getpid());
             write(fd2, log1, conta_num_char(log1));
             char *args[] = {doc, NULL};
@@ -202,7 +206,8 @@ int main(int argc, char *argv[])
             pid_t childpid = wait(&status);
 
             printf("Parent knows child %d is finished. \n", (int)childpid);
-            char log2[300];
+            char *log2;
+            log2 = malloc(sizeof(char)*10000);
             sprintf(log2, "program %s (%d) finished (EXITED=%d, EXITSTATUS=%d, SIGNALED=%d, SIGNAL=%d, SIGNALSTR=%s) \n", doc, 
             (int)childpid, (int)WIFEXITED(status), (int)WEXITSTATUS(status), (int)WIFSIGNALED(status), WTERMSIG(status), strsignal(WTERMSIG(status)));
             write(fd2, log2, conta_num_char(log2));
@@ -210,7 +215,8 @@ int main(int argc, char *argv[])
             if (childpid > 0){
                 pid_t filho = fork();
                 if (filho == 0){
-                    char log3[300];
+                    char *log3;
+                    log3 = malloc(sizeof(char)*10000);
                     sprintf(log3, "restarting %s (oldpid=%d, newpid=%d)\n", doc, childpid, getpid());
                     write(fd2, log3, conta_num_char(log3));
                     char *args[] = {doc, NULL};
