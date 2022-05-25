@@ -1,7 +1,7 @@
 /*
  PROGRAMA UTIL PARA TESTAR O LAB!
 
- Funcionalidade: este programa espera TIME_SLEEP segundos e finaliza com signal
+Funcionalidade: este programa espera TIME_SLEEP segundos e finaliza com signal
 
 Para compilar: gcc timecrash.c -o timecrash
  */
