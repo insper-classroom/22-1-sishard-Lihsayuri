@@ -118,7 +118,6 @@ int main(int argc, char *argv[])
             programs[programs_counter - 1] = malloc(sizeof(char) * 1000);
 
             strcpy(programs[programs_counter - 1], token);
-            // printf("%s \n" , programs[programs_counter-1]);
 
             token = strtok(NULL, s);
         }
@@ -138,10 +137,8 @@ int main(int argc, char *argv[])
             else{
                 char *log1;
                 log1 = malloc(sizeof(char)*10000);
-                sprintf(log1, "starting %s (pid = %d) \n", programs[i], filho);
+                sprintf(log1, "starting %s (pid=%d)\n", programs[i], filho);
                 write(fd2, log1, conta_num_char(log1));
-
-
                 // printf("PIDPAI %d\n", getpid());
 
                 lista[i].pid = filho;
@@ -160,7 +157,7 @@ int main(int argc, char *argv[])
                 if (lista[j].pid == childpid){
                     char *log2;
                     log2 = malloc(sizeof(char)*10000);
-                    sprintf(log2, "program %s (%d) finished (EXITED=%d, EXITSTATUS=%d, SIGNALED=%d, SIGNAL=%d, SIGNALSTR=%s) \n", lista[j].program, 
+                    sprintf(log2, "program %s (pid=%d) finished (EXITED=%d, EXITSTATUS=%d, SIGNALED=%d, SIGNAL=%d, SIGNALSTR=%s)\n", lista[j].program, 
                     (int)childpid, (int)WIFEXITED(status), (int)WEXITSTATUS(status), (int)WIFSIGNALED(status), WTERMSIG(status), strsignal(WTERMSIG(status)));
                     write(fd2, log2, conta_num_char(log2));
 
@@ -194,7 +191,7 @@ int main(int argc, char *argv[])
         {
             char *log1;
             log1 = malloc(sizeof(char)*10000);
-            sprintf(log1, "starting %s (pid = %d) \n", doc, getpid());
+            sprintf(log1, "starting %s (pid=%d)\n", doc, getpid());
             write(fd2, log1, conta_num_char(log1));
             char *args[] = {doc, NULL};
             execvp(doc, args);
@@ -208,7 +205,7 @@ int main(int argc, char *argv[])
             printf("Parent knows child %d is finished. \n", (int)childpid);
             char *log2;
             log2 = malloc(sizeof(char)*10000);
-            sprintf(log2, "program %s (%d) finished (EXITED=%d, EXITSTATUS=%d, SIGNALED=%d, SIGNAL=%d, SIGNALSTR=%s) \n", doc, 
+            sprintf(log2, "program %s (pid=%d) finished (EXITED=%d, EXITSTATUS=%d, SIGNALED=%d, SIGNAL=%d, SIGNALSTR=%s)\n", doc, 
             (int)childpid, (int)WIFEXITED(status), (int)WEXITSTATUS(status), (int)WIFSIGNALED(status), WTERMSIG(status), strsignal(WTERMSIG(status)));
             write(fd2, log2, conta_num_char(log2));
 
