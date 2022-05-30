@@ -130,6 +130,8 @@ int main(int argc, char *argv[])
     }
 
     sem_destroy(lista_train->sem_barrier);
+    free(lista_train);
+    free(tids_train);
 
 
     printf("Accuracy score train:\t%.3f\n", accuracy_score(get_target(data_train), pred_train, data_train->n_rows));
@@ -167,6 +169,8 @@ int main(int argc, char *argv[])
     }
 
     sem_destroy(lista_test->sem_barrier);
+    free(lista_test);
+    free(tids_test);
 
     printf("Accuracy score test:\t%.3f\n", accuracy_score(get_target(data_test), pred_test, data_test->n_rows));
 
