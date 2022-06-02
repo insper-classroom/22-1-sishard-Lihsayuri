@@ -11,11 +11,10 @@
 #include <stdio.h>
 #include <semaphore.h>
 #include "knn.h"
+#include "raylib.h"
 
 
-// -k n_vizinhos: informa o argumento do classificador, números de vizinhos a serem considerados
-// -d path_train_csv: informa o path para o arquivo CSV de treinamento
-// -t path_test_csv: informa o path para o arquivo CSV de teste
+int counter = 0;
 
 typedef struct args{
     sem_t *sem_barrier;
@@ -26,31 +25,61 @@ typedef struct args{
     int num;
 } barrier;
 
+
+typedef struct relacao_loading{
+    long size_x;
+    int counter;
+} loading; 
+
+
+// --------------- THREAD BARREIRA PARA ESPERAR TODAS AS THREADS E LIMITAR SUA EXECUÇÃO SIMULTÂNEA EM 1 NÚMERO -------
+
 void *thread_barreira(void *args) {
     barrier *arg = (barrier *)args;
     sem_wait(arg->sem_barrier);
 
-    //pthread_mutex_unlock(arg->mutex);
-    //printf("Antes da barreira\n");
-    //pthread_mutex_unlock(arg->mutex);
-
     pthread_mutex_lock(arg->mutex);
-    printf("Esse é o numero da thread: %d \n", arg->num);
+    counter++;
+    //printf("Esse é o numero da thread: %d \n", arg->num);
     pthread_mutex_unlock(arg->mutex);
-    //sleep(2);
 
     *arg->pred_result = knn_predict(arg->knn_model, arg->data);
     
-    // pred_train[i] = knn_predict(knn_model, data_train->mat[i]);
-
-    //pthread_mutex_lock(arg->mutex);
-    //printf("Depois da barreira, essa é a thread: %d\n", arg->num);
-    //pthread_mutex_unlock(arg->mutex);
-
     sem_post(arg->sem_barrier);
 
     return NULL;
 }
+
+//--------- THREAD PARA DESENHAR UMA JANELA QUE MOSTRA UMA BARRA DE PROGRESSO DA EXECUÇÃO DAS THREADS ----------------
+
+void *thread_desenha(void *args){
+    loading *arg = (loading *)args;
+
+    InitWindow(800, 450, "Loading Window");
+    SetTargetFPS(60);
+    while (!WindowShouldClose())
+    {
+        int x = ((float)600/arg->size_x)*counter;
+        BeginDrawing();
+            ClearBackground(RAYWHITE);
+            DrawText("LOADING...", 255, 150, 20, BLACK);
+            DrawRectangleLines(100, 200, 600, 60, BLACK);
+            DrawRectangle(100, 200, x, 60, BLUE);
+
+        EndDrawing();
+
+        if (counter == arg->size_x){
+            CloseWindow();
+        }
+
+    }
+
+    counter = 0;
+
+    return 0;
+}
+
+
 
 int main(int argc, char *argv[])
 {
@@ -58,7 +87,7 @@ int main(int argc, char *argv[])
     int n_vizinhos;
     char *path_train_csv;
     char *path_test_csv;
-    int n_threads;
+    int n_threads = 100; // padrão caso não seja passado nada
 
 //----------------------------------------------- Separa cada argumento do terminal -------------------------------------
 
@@ -115,6 +144,11 @@ int main(int argc, char *argv[])
 
     sem_init(lista_train->sem_barrier, 0, n_threads); //valor maximo de semaforos rodando 
 
+
+    loading *train_loading = malloc(sizeof(loading));
+    train_loading->size_x = data_train->n_rows;
+    train_loading->counter = counter;
+
     for (int i = 0; i < data_train->n_rows; i++){
         lista_train[i].mutex = &mutex;
         lista_train[i].sem_barrier = lista_train->sem_barrier;
@@ -125,6 +159,10 @@ int main(int argc, char *argv[])
         pthread_create(&tids_train[i], NULL, thread_barreira, &lista_train[i]);
     }
 
+    pthread_t *tid_desenha = malloc(sizeof(pthread_t));
+    pthread_create(tid_desenha, NULL, thread_desenha, train_loading);
+
+    pthread_join(*tid_desenha, NULL);
     for (int i = 0; i < data_train->n_rows; i++){
         pthread_join(tids_train[i], NULL);
     }
@@ -136,15 +174,14 @@ int main(int argc, char *argv[])
 
     printf("Accuracy score train:\t%.3f\n", accuracy_score(get_target(data_train), pred_train, data_train->n_rows));
 
-// -------------------- Abre alguns csvs  e define algumas variáveis: TRAIN ----------------------------------------------------------------
+// -------------------- Abre alguns csvs  e define algumas variáveis: TEST ----------------------------------------------------------------
 
     // Abre os dados de teste
     t_data *data_test = read_csv(path_test_csv);
     long *pred_test= malloc(sizeof(long) * data_test->n_rows);
 
 
-// ----------------------- Cria mutex e passa argumentos para as threads fazerem as predições: TRAIN ---------------------------     
-
+// ----------------------- Cria mutex e passa argumentos para as threads fazerem as predições: TEST ---------------------------     
     
     barrier *lista_test = malloc(sizeof(barrier)*data_test->n_rows);
     lista_test->mutex = &mutex;
@@ -153,6 +190,11 @@ int main(int argc, char *argv[])
     pthread_t *tids_test = malloc(sizeof(pthread_t)*data_test->n_rows);
 
     sem_init(lista_test->sem_barrier, 0, n_threads); //valor maximo de semaforos rodando 
+
+    loading *test_loading = malloc(sizeof(loading));
+    test_loading->size_x = data_test->n_rows;
+    test_loading->counter = counter;
+
 
     for (int i = 0; i < data_test->n_rows; i++){
         lista_test[i].mutex = &mutex;
@@ -164,6 +206,10 @@ int main(int argc, char *argv[])
         pthread_create(&tids_test[i], NULL, thread_barreira, &lista_test[i]);
     }
 
+
+    pthread_create(tid_desenha, NULL, thread_desenha, test_loading);
+    pthread_join(*tid_desenha, NULL);
+
     for (int i = 0; i <data_test->n_rows; i++){
         pthread_join(tids_test[i], NULL);
     }
@@ -174,6 +220,31 @@ int main(int argc, char *argv[])
 
     printf("Accuracy score test:\t%.3f\n", accuracy_score(get_target(data_test), pred_test, data_test->n_rows));
 
+    char res1[300];
+    char res2[300];
+    sprintf(res1, "Accuracy score train:\t%.3f\n", accuracy_score(get_target(data_train), pred_train, data_train->n_rows));
+    sprintf(res2, "Accuracy score test:\t%.3f\n", accuracy_score(get_target(data_test), pred_test, data_test->n_rows));
+
+// -------------------- DESENHA JANELA FINAL MOSTRANDO ACURÁCIAS ---------------------------------------------
+
+    InitWindow(800, 450, "Results of accuracy :)");
+    SetTargetFPS(60);
+    while (!WindowShouldClose())
+    {
+        BeginDrawing();
+            ClearBackground(RAYWHITE);
+            DrawText(res1, 255, 150, 20, BLACK);
+            DrawText(res2, 255, 100, 20, BLACK);
+        EndDrawing();        
+    }
+
+    CloseWindow();
+
+
+
     return 0;
 
 }
+
+
+// -lraylib
