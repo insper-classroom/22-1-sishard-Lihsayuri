@@ -14,7 +14,7 @@
 #include "raylib.h"
 
 
-int counter = 0;
+
 
 typedef struct args{
     sem_t *sem_barrier;
@@ -22,13 +22,15 @@ typedef struct args{
     long *pred_result;
     t_knn_classifier *knn_model;
     double *data;
-    int num;
+    long num;
+    long *counter;
 } barrier;
 
 
 typedef struct relacao_loading{
     long size_x;
-    int counter;
+    long *counter;
+    char nome[5];
 } loading; 
 
 
@@ -36,45 +38,86 @@ typedef struct relacao_loading{
 
 void *thread_barreira(void *args) {
     barrier *arg = (barrier *)args;
+
+
     sem_wait(arg->sem_barrier);
 
     pthread_mutex_lock(arg->mutex);
-    counter++;
-    //printf("Esse é o numero da thread: %d \n", arg->num);
+
+    // printf("Num da thread %ld\n", arg->num);
+
     pthread_mutex_unlock(arg->mutex);
 
+    *arg->pred_result = knn_predict(arg->knn_model, arg->data);    
+  
     *arg->pred_result = knn_predict(arg->knn_model, arg->data);
     
     sem_post(arg->sem_barrier);
+
 
     return NULL;
 }
 
 //--------- THREAD PARA DESENHAR UMA JANELA QUE MOSTRA UMA BARRA DE PROGRESSO DA EXECUÇÃO DAS THREADS ----------------
 
-void *thread_desenha(void *args){
+void *thread_desenha_run(void *args){
     loading *arg = (loading *)args;
 
-    InitWindow(800, 450, "Loading Window");
+    InitWindow(800, 450, "Executing Window");
     SetTargetFPS(60);
+
+    char texto[100];
+    sprintf(texto, "EXECUTING THE THREADS: %s...", arg->nome);
+
     while (!WindowShouldClose())
     {
-        int x = ((float)600/arg->size_x)*counter;
+        printf("COUNTER EXECUTE: %ld\n", *arg->counter);
+        long x = ((float)500/arg->size_x)*(*arg->counter);
         BeginDrawing();
             ClearBackground(RAYWHITE);
-            DrawText("LOADING...", 255, 150, 20, BLACK);
-            DrawRectangleLines(100, 200, 600, 60, BLACK);
+            DrawText(texto, 100, 150, 20, BLACK);
+            DrawRectangleLines(100, 200, 500, 60, BLACK);
             DrawRectangle(100, 200, x, 60, BLUE);
-
+            DrawText("LOADING...", 300, 215, 20, GREEN);
         EndDrawing();
 
-        if (counter == arg->size_x){
+        if (*arg->counter == arg->size_x){
             CloseWindow();
         }
 
     }
 
-    counter = 0;
+    return 0;
+}
+
+
+void *thread_desenha_create(void *args){
+    loading *arg = (loading *)args;
+
+    InitWindow(800, 450, "Creating Window");
+    SetTargetFPS(60);
+
+    char texto[100];
+    sprintf(texto, "CREATING THE THREADS: %s ...", arg->nome);
+
+    while (!WindowShouldClose())
+    {
+        printf("COUNTER CREATE: %ld\n", *arg->counter);
+        long x = ((float)500/arg->size_x)*(*arg->counter);
+        BeginDrawing();
+            ClearBackground(RAYWHITE);
+            DrawText(texto, 100, 150, 20, BLACK);
+            DrawRectangleLines(100, 200, 500, 60, BLACK);
+            DrawRectangle(100, 200, x, 60, BLUE);
+            DrawText("LOADING...", 300, 215, 20, GREEN);
+
+        EndDrawing();
+
+        if (*arg->counter == arg->size_x){
+            CloseWindow();
+        }
+
+    }
 
     return 0;
 }
@@ -89,7 +132,7 @@ int main(int argc, char *argv[])
     char *path_test_csv;
     int n_threads = 100; // padrão caso não seja passado nada
 
-//----------------------------------------------- Separa cada argumento do terminal -------------------------------------
+//---------------------------------------SEPARA CADA ARGUMENTO NO TERMINAL -------------------------------------
 
     for (int i = 1; i < argc; i+=2){
        switch (argv[i][1])
@@ -119,7 +162,15 @@ int main(int argc, char *argv[])
     printf("%d \n", n_vizinhos);
     printf("%d \n", n_threads);
 
-// ------------------------------ Abre alguns csvs  e define algumas variáveis: TRAIN ---------------------------------------
+
+// --------------------------------------------------------------------------------------------------------------
+//                                        TRAIN 
+// --------------------------------------------------------------------------------------------------------------
+
+
+
+
+// -------------------------ABRE ALGUNS CSV'S E DEFINE ALGUMAS VARIÁVEIS: TRAIN -----------------------------------------
 
     // Abre dataset de treinamento
     t_data *data_train = read_csv(path_train_csv);    
@@ -130,7 +181,7 @@ int main(int argc, char *argv[])
 
 
 
-// ----------------------- Cria mutex e passa argumentos para as threads fazerem as predições: TRAIN ---------------------------     
+// ----------------------- PASSA ARGUMENTOS PARA AS THREADS FAZEREM AS PREDIÇÕES: TRAIN ---------------------------     
 
     // Para cada registro (linha da matriz) de treinamento, faz a predição
 
@@ -140,48 +191,95 @@ int main(int argc, char *argv[])
     lista_train->mutex = &mutex;
     lista_train->sem_barrier = malloc(sizeof(sem_t));
 
+    long *counter = malloc(sizeof(long));
+    *counter = 0;
+
     pthread_t *tids_train = malloc(sizeof(pthread_t)*data_train->n_rows);
 
     sem_init(lista_train->sem_barrier, 0, n_threads); //valor maximo de semaforos rodando 
 
+//----------------------- CRIA STRUCT COM N DE THREADS PARA CRIAR E CONTADOR : TRAIN -----------------------------
 
-    loading *train_loading = malloc(sizeof(loading));
-    train_loading->size_x = data_train->n_rows;
-    train_loading->counter = counter;
+    loading *train_creating = malloc(sizeof(loading));
+    train_creating->size_x = data_train->n_rows;
+    train_creating->counter = counter;
+    char nomeTrain[5] = "TRAIN";
+    strcpy(train_creating->nome, nomeTrain);
 
-    for (int i = 0; i < data_train->n_rows; i++){
+// ----------------------- CRIA THREAD QUE IRÁ MOSTRAR O LOADING DO PROCESSO DE CRIAÇÃO DAS THREADS: TRAIN ----------    
+
+    pthread_t *tid_desenha = malloc(sizeof(pthread_t));
+    pthread_create(tid_desenha, NULL, thread_desenha_create, train_creating);
+
+
+    for (long i = 0; i < data_train->n_rows; i++){
+        *counter+=1;
         lista_train[i].mutex = &mutex;
         lista_train[i].sem_barrier = lista_train->sem_barrier;
         lista_train[i].num = i;
         lista_train[i].data = data_train->mat[i];
         lista_train[i].knn_model = knn_model;
         lista_train[i].pred_result = &pred_train[i];
+        lista_train[i].counter = counter;
         pthread_create(&tids_train[i], NULL, thread_barreira, &lista_train[i]);
     }
 
-    pthread_t *tid_desenha = malloc(sizeof(pthread_t));
-    pthread_create(tid_desenha, NULL, thread_desenha, train_loading);
+// ------------------------- RODO A THREAD QUE MOSTRA O LOADING DO PROCESSO DE CRIAÇÃO DE THREADS: TRAIN -------------    
 
     pthread_join(*tid_desenha, NULL);
-    for (int i = 0; i < data_train->n_rows; i++){
+
+
+// ------------------------CHAMA THREAD PARA FAZER O LOADING DO PROCESSO DE EXECUÇÃO : TRAIN ----------------------
+
+    *counter = 0;
+
+
+    loading *train_loading = malloc(sizeof(loading));
+    train_loading->size_x = data_train->n_rows;
+    train_loading->counter = counter;
+    strcpy(train_loading->nome, nomeTrain);
+
+
+    // pthread_t *tid_desenha = malloc(sizeof(pthread_t));
+    pthread_create(tid_desenha, NULL, thread_desenha_run, train_loading);
+
+
+    for (long i = 0; i < data_train->n_rows; i++){
+        *counter+=1;
+        // printf("VAMOS VER O I %ld\n", i);
         pthread_join(tids_train[i], NULL);
     }
+
+    pthread_join(*tid_desenha, NULL);
+
+// --------------------- LIMPA ALGUNS ESPAÇOS ALOCADOS E SEMÁFORO UTILIZADO --------------------------------------    
+
 
     sem_destroy(lista_train->sem_barrier);
     free(lista_train);
     free(tids_train);
+    free(train_creating);
+    free(train_loading);
+
 
 
     printf("Accuracy score train:\t%.3f\n", accuracy_score(get_target(data_train), pred_train, data_train->n_rows));
 
-// -------------------- Abre alguns csvs  e define algumas variáveis: TEST ----------------------------------------------------------------
+
+//-------------------------------------------------------------------------------------------------------------------
+//                                                 TEST
+//-------------------------------------------------------------------------------------------------------------------
+
+
+
+// -------------------- ABRE ALGUNS CSV'S E DEFINE ALGUMAS VARIÁVEIS: TEST ----------------------------------------------------------------
 
     // Abre os dados de teste
     t_data *data_test = read_csv(path_test_csv);
     long *pred_test= malloc(sizeof(long) * data_test->n_rows);
 
 
-// ----------------------- Cria mutex e passa argumentos para as threads fazerem as predições: TEST ---------------------------     
+// ----------------------- PASSA ARGUMENTOS PARA AS THREADS FAZEREM AS PREDIÇÕES: TEST --------------------------------     
     
     barrier *lista_test = malloc(sizeof(barrier)*data_test->n_rows);
     lista_test->mutex = &mutex;
@@ -189,34 +287,71 @@ int main(int argc, char *argv[])
 
     pthread_t *tids_test = malloc(sizeof(pthread_t)*data_test->n_rows);
 
+    *counter = 0;
+
+
     sem_init(lista_test->sem_barrier, 0, n_threads); //valor maximo de semaforos rodando 
 
-    loading *test_loading = malloc(sizeof(loading));
-    test_loading->size_x = data_test->n_rows;
-    test_loading->counter = counter;
+//----------------------- CRIA STRUCT COM N DE THREADS PARA CRIAR E CONTADOR : TEST -----------------------------
 
 
-    for (int i = 0; i < data_test->n_rows; i++){
+    loading *test_creating = malloc(sizeof(loading));
+    test_creating->size_x = data_test->n_rows;
+    test_creating->counter = counter;
+    char nomeTest[5] = "TEST";
+    strcpy(test_creating->nome, nomeTest);
+
+    // pthread_t *tid_desenha = malloc(sizeof(pthread_t));
+    pthread_create(tid_desenha, NULL, thread_desenha_create, test_creating);
+
+
+    for (long i = 0; i < data_test->n_rows; i++){
+        *counter += 1;
         lista_test[i].mutex = &mutex;
         lista_test[i].sem_barrier = lista_test->sem_barrier;
         lista_test[i].num = i;
         lista_test[i].data = data_test->mat[i];
         lista_test[i].knn_model = knn_model;
         lista_test[i].pred_result = &pred_test[i];
+        lista_test[i].counter = counter;
         pthread_create(&tids_test[i], NULL, thread_barreira, &lista_test[i]);
     }
 
+// ------------------------- RODO A THREAD QUE MOSTRA O LOADING DO PROCESSO DE CRIAÇÃO DE THREADS: TEST -------------    
 
-    pthread_create(tid_desenha, NULL, thread_desenha, test_loading);
+
     pthread_join(*tid_desenha, NULL);
 
-    for (int i = 0; i <data_test->n_rows; i++){
+// ------------------------CHAMA THREAD PARA FAZER O LOADING DO PROCESSO DE EXECUÇÃO : TEST ----------------------
+
+    *counter = 0;
+
+
+    loading *test_loading = malloc(sizeof(loading));
+    test_loading->size_x = data_test->n_rows;
+    test_loading->counter = counter;
+    strcpy(test_loading->nome, nomeTest);
+
+    pthread_create(tid_desenha, NULL, thread_desenha_run, test_loading);
+
+
+    for (long i = 0; i <data_test->n_rows; i++){
+        *counter+=1;
         pthread_join(tids_test[i], NULL);
     }
+
+    pthread_join(*tid_desenha, NULL);
+
+// --------------------- LIMPA ALGUNS ESPAÇOS ALOCADOS E SEMÁFORO UTILIZADO --------------------------------------    
+
 
     sem_destroy(lista_test->sem_barrier);
     free(lista_test);
     free(tids_test);
+    free(test_creating);
+    free(test_loading);
+    free(tid_desenha);
+// --------------------------- IMPRIME RESULTADOS CALCULADOS --------------------------------------------------
 
     printf("Accuracy score test:\t%.3f\n", accuracy_score(get_target(data_test), pred_test, data_test->n_rows));
 
@@ -245,6 +380,3 @@ int main(int argc, char *argv[])
     return 0;
 
 }
-
-
-// -lraylib
