@@ -1,14 +1,14 @@
 ## K-Nearest Neighbors Classifier :pushpin: :bar_chart: <img src="https://img.shields.io/static/v1?label=EntregaLab3&message=Finalizado&color=success&style=flat-square&logo=ghost"/>
 
-O KNN (k-vizinhos mais próximos) é um método que foi desenvolvido para classificação. A ideia é que classificar um novo registro, com base no suposto de que registros com resposta parecida possuem características igualmente parecidas,  Dessa forma, o KNN busca encontrar k vizinhos que sejam mais semelhantes ao registro que se deseja classificar.
+O KNN (k-vizinhos mais próximos) é um método que foi desenvolvido para classificação. A ideia é classificar um novo registro, com base no suposto de que registros com resposta parecida possuem características igualmente parecidas.  Dessa forma, o KNN busca encontrar k vizinhos que sejam mais semelhantes ao registro que se deseja classificar.
 
 
-E para fazer isso, uma ideia é separar o processo em threads diferentes. Isso à primeira vista pode não parecer tão vantajoso, mas quando comparamos a execução para um registro grande feito com apenas 1 thread com a execução de várias threads simultâneas é que a diferença torna-se visível. Caso você não esteja acreditando, basta testar. Neste repositório você encontrará vários exemplos para rodar o código. Para isso basta executar em seu terminal:
+E para fazer isso, uma ideia é separar o processo em threads diferentes. Isso à primeira vista pode não parecer tão vantajoso, mas quando comparamos a execução para um registro grande feito com apenas 1 thread com a execução de várias threads simultâneas, é que a diferença torna-se visível. Caso você não esteja acreditando, basta testar. Neste repositório você encontrará vários exemplos para rodar o código. Para isso basta executar em seu terminal:
 
 ```C
 gcc -Wall -Wno-unused-result -g classifier.c knn.o -o classifier -lm -pthread -lraylib
 ```
-Ess linha irá compilar o seu código.
+Essa linha irá compilar o seu código.
 
 ```C
 ./classifier -k <número_de_vizinhos> -d <path_do_csv_de_treino> -t <path_do_csv_de_teste> -n <número_de_threads_desejadas>
@@ -33,11 +33,11 @@ Para o primeiro passo que é utilizar semáforo para controlar o número de thre
 sem_init(lista_test->sem_barrier, 0, n_threads); //valor maximo de semaforos rodando 
 ```
 
-No caso, esse valor de tickets é definido pelo usuário. E toda vez que a thread passar pela função  ```sem_wait(sem_t *semaforo)```, um desses tickets é tirado. Ou seja, enquanto houverem tickets disponíveis, as threads irão passar pelo semáforo e executar normalmente, de maneira simultânea. Entretanto, se o valor desse saldo foi 0, isso significa que mais nenhuma thread poderá rodar enquanto o saldo não for positivo. E como o salfo voltará a ser positivo? Através da função ```sem_post(sem_t *semaforo)```, que faz exatamente o contrário da função ```sem_wait(sem_t *semaforo)```, ou seja, adiciona um ticket ao semáforo. Assim, conforme as threads vão passando pela  ```*thread_barreira(void *args)``` - que é quem faz o controle do semáforo - elas vão tirando tickets do semáforo, e assim que executam, também vão adicionando tickets. 
+No caso, esse valor de tickets é definido pelo usuário. E toda vez que a thread passar pela função  ```sem_wait(sem_t *semaforo)```, um desses tickets é tirado. Ou seja, enquanto houverem tickets disponíveis, as threads irão passar pelo semáforo e executar normalmente, de maneira simultânea. Entretanto, se o valor desse saldo for 0, isso significa que mais nenhuma thread poderá rodar enquanto o saldo não for positivo. E como o saldo voltará a ser positivo? Através da função ```sem_post(sem_t *semaforo)```, que faz exatamente o contrário da função ```sem_wait(sem_t *semaforo)```, ou seja, adiciona um ticket ao semáforo. Assim, conforme as threads vão passando pela  ```*thread_barreira(void *args)``` - que é quem faz o controle do semáforo - elas vão tirando tickets do semáforo, e assim que executam, também vão adicionando tickets. 
 
 E todas essas informações do semáforo são passadas para a ```*thread_barreira(void *args)``` através de uma struct chamada ```barrier```, que também possui informações relacionadas ao número da thread que está rodando e os dados que são recebidos na função ```knn_predict(arg->knn_model, arg->data)```. 
 
-Agora, em relação ao próximo passo que envolve a janela gráfica, uma outra struct foi criada - a ```loading```. Essa struct um contador que indica qual thread está rodando, o total de threads que será rodada e um indicar para saber se estamos no processo de treinamento ou teste. Assim, com todas essas informações que serão passadas nas threads:  ```*thread_desenha_run(void *args)``` e ```*thread_desenha_create(void *args)```, podemos saber qual thread está rodando em relação ao total. 
+Agora, em relação ao próximo passo que envolve a janela gráfica, uma outra struct foi criada - a ```loading```. Essa struct é formada por um contador - que indica qual thread está rodando, o total de threads que serão rodadas e um indicador para saber se estamos no processo de treinamento ou teste. Assim, com todas essas informações que serão passadas nas threads:  ```*thread_desenha_run(void *args)``` e ```*thread_desenha_create(void *args)```, podemos saber qual thread está rodando em relação ao total - tanto no processo de criação dessas threads, quanto no processo de execução delas. 
 Logo, graficamente foi feito apenas um retângulo, que vai sendo preenchido conforme essa relação vai se aproximando até ser igual.
 
 
