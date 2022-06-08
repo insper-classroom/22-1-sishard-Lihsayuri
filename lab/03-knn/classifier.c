@@ -71,7 +71,7 @@ void *thread_desenha_run(void *args){
 
     while (!WindowShouldClose())
     {
-        printf("COUNTER EXECUTE: %ld\n", *arg->counter);
+        // printf("COUNTER EXECUTE: %ld\n", *arg->counter);
         long x = ((float)500/arg->size_x)*(*arg->counter);
         BeginDrawing();
             ClearBackground(RAYWHITE);
@@ -102,7 +102,7 @@ void *thread_desenha_create(void *args){
 
     while (!WindowShouldClose())
     {
-        printf("COUNTER CREATE: %ld\n", *arg->counter);
+        // printf("COUNTER CREATE: %ld\n", *arg->counter);
         long x = ((float)500/arg->size_x)*(*arg->counter);
         BeginDrawing();
             ClearBackground(RAYWHITE);
@@ -157,10 +157,10 @@ int main(int argc, char *argv[])
        }
     }
 
-    printf("%s \n", path_train_csv);
-    printf("%s \n", path_test_csv);
-    printf("%d \n", n_vizinhos);
-    printf("%d \n", n_threads);
+    // printf("%s \n", path_train_csv);
+    // printf("%s \n", path_test_csv);
+    // printf("%d \n", n_vizinhos);
+    // printf("%d \n", n_threads);
 
 
 // --------------------------------------------------------------------------------------------------------------
@@ -380,3 +380,5 @@ int main(int argc, char *argv[])
     return 0;
 
 }
+
+
